@@ -1,0 +1,12 @@
+{
+  "rows": 30000,
+  "top_score": 0.9411888493764173,
+  "median_score": 0.4428606438441044,
+  "monitor_share": 0.439,
+  "action_counts": {
+    "monitor": 13173,
+    "refresh_and_review_ctr": 9741,
+    "refresh": 7004,
+    "expand_and_refresh": 82
+  }
+}
