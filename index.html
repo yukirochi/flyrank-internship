@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FlyRank Content Refresh Research</title>
+    <style>
+      body {
+        font-family:
+          Inter,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          sans-serif;
+        max-width: 960px;
+        margin: 0 auto;
+        padding: 32px;
+        line-height: 1.7;
+        color: #111;
+        background: #f7f8fb;
+      }
+      h1,
+      h2,
+      h3 {
+        color: #102a43;
+      }
+      h1 {
+        font-size: 2.6rem;
+        margin-bottom: 0.5rem;
+      }
+      h2 {
+        font-size: 1.6rem;
+        margin-top: 2.5rem;
+      }
+      p,
+      li {
+        font-size: 1rem;
+      }
+      a {
+        color: #1768c0;
+        text-decoration: none;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+      .section {
+        background: #ffffff;
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+        margin-bottom: 24px;
+      }
+      .lede {
+        max-width: 740px;
+      }
+      .chart-list li {
+        margin-bottom: 0.4rem;
+      }
+      .note {
+        border-left: 4px solid #1768c0;
+        background: #f0f5ff;
+        padding: 14px 18px;
+        margin: 20px 0;
+      }
+      .small {
+        font-size: 0.94rem;
+        color: #425466;
+      }
+      .caption {
+        font-size: 0.95rem;
+        color: #486581;
+        margin-top: 0.6rem;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 1rem;
+      }
+      th,
+      td {
+        border: 1px solid #d9e2ec;
+        padding: 10px 12px;
+        text-align: left;
+      }
+      th {
+        background: #f0f4f8;
+      }
+    </style>
+  </head>
+  <body>
+    <article>
+      <header class="section">
+        <h1>Content Refresh Opportunity Ranking for FlyRank</h1>
+        <p class="lede">
+          This paper evaluates whether an anonymized page-level content dataset
+          can support FlyRank’s refresh lane by ranking existing pages for
+          editorial review. The study is grounded in real content-refresh
+          decision support: surfacing pages with stale visibility, declining
+          demand, and engagement opportunity without leaking private signals.
+        </p>
+        <p>
+          The experiment compares a deterministic baseline refresh score to a
+          client-aware random forest model. Results are reported on the same
+          held-out client split, with the model improving precision over the
+          baseline while keeping the output aligned to human review. The work
+          also documents data exclusions, leakage checks, limitations, and a
+          ranked action playbook. Reproducibility is supported through the
+          repository notebooks and scripts.
+        </p>
+      </header>
+
+      <section class="section">
+        <h2>Introduction / Problem statement</h2>
+        <p>
+          FlyRank’s refresh lane is about choosing which existing pages should
+          be updated next, especially when editorial teams must balance effort
+          across many candidates. This paper asks whether an anonymized page
+          metrics dataset can support that decision by ranking pages for
+          refresh, refresh + CTR improvement, or expansion work.
+        </p>
+        <p>
+          The case study is public-safe: it uses only anonymized page traffic,
+          position, freshness, and engagement metrics, not page titles, URLs,
+          brands, or search queries. The goal is to make the FlyRank refresh
+          recommendation process more transparent and reviewer-friendly.
+        </p>
+      </section>
+
+      <section class="section">
+        <h2>Data</h2>
+        <p>
+          This analysis uses the FlyRank ML Internship dataset from
+          <code>data/raw/content_refresh_anonymized.csv</code>. The release
+          contains anonymized page-level metrics, trailing 90-day impressions,
+          clicks, sessions, and engagement signals. The work excluded titles,
+          URLs, query text, and client identifiers beyond the anonymized client
+          group used for validation. Rows lacking a valid decline label were
+          excluded from training and validation to keep the target definition
+          honest.
+        </p>
+        <ul>
+          <li>Release: anonymized FlyRank internship page metrics.</li>
+          <li>Tables: single page-level feature table and derived queues.</li>
+          <li>
+            Date windows: trailing 90-day exposure and engagement metrics.
+          </li>
+          <li>
+            Exclusions: private identifiers, text fields, and unlabeled rows.
+          </li>
+        </ul>
+      </section>
+
+      <section class="section">
+        <h2>Methodology</h2>
+        <p>
+          Assumptions: the dataset’s search, freshness, and engagement metrics
+          capture the primary signals for refresh opportunity ranking. The model
+          should avoid information leakage by excluding any feature derived from
+          the decline target or future performance.
+        </p>
+        <ul>
+          <li>
+            <strong>Features</strong>: visibility (impressions, average
+            position), freshness (days since update, content age), engagement
+            (CTR, scroll rate, engagement rate), content depth, and categorical
+            tiers.
+          </li>
+          <li>
+            <strong>Label</strong>: <code>is_declining_label</code>, a binary
+            decline indicator embedded in the dataset.
+          </li>
+          <li>
+            <strong>Baseline</strong>: deterministic refresh score using
+            visibility, freshness risk, position opportunity, and depth gap,
+            with reason-code explainability.
+          </li>
+          <li>
+            <strong>Validation</strong>: client-aware holdout split so training
+            and test clients do not overlap.
+          </li>
+          <li>
+            <strong>Leakage checks</strong>: excluded label-derived features and
+            kept only pre-decision signals.
+          </li>
+        </ul>
+      </section>
+
+      <section class="section">
+        <h2>Results</h2>
+        <p>
+          The random forest model improves precision on the same held-out client
+          split compared to the deterministic baseline. The model’s stronger
+          top-K performance supports a more effective review queue while keeping
+          the output oriented toward human intervention instead of automation.
+        </p>
+        <p class="note">
+          The model report is available in <code>outputs/model_report.md</code>;
+          charts are available in <code>outputs/charts/</code>.
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th>Model</th>
+              <th>ROC AUC</th>
+              <th>Avg precision</th>
+              <th>Precision@50</th>
+              <th>Recall</th>
+              <th>F1</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>decision_tree</td>
+              <td>0.742</td>
+              <td>0.575</td>
+              <td>0.540</td>
+              <td>0.716</td>
+              <td>0.634</td>
+            </tr>
+            <tr>
+              <td>logistic_regression</td>
+              <td>0.700</td>
+              <td>0.522</td>
+              <td>0.400</td>
+              <td>0.567</td>
+              <td>0.566</td>
+            </tr>
+            <tr>
+              <td>random_forest</td>
+              <td>0.750</td>
+              <td>0.618</td>
+              <td>0.740</td>
+              <td>0.744</td>
+              <td>0.640</td>
+            </tr>
+            <tr>
+              <td>baseline_rules</td>
+              <td>0.627</td>
+              <td>0.468</td>
+              <td>0.240</td>
+              <td>-</td>
+              <td>-</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="section">
+        <h2>Limitations & honest framing</h2>
+        <p>
+          This work is a reviewer aid, not an automatic publishing engine. It
+          does not claim long-term SEO forecasting or brand strategy
+          optimization. The dataset is limited to anonymized trailing 90-day
+          metrics and cannot represent editorial nuance, campaign timing, or
+          private client goals. Results may differ on new client cohorts or
+          future traffic conditions.
+        </p>
+      </section>
+
+      <section class="section">
+        <h2>Ranked recommendations</h2>
+        <p>
+          The paper’s ranked action playbook groups pages into monitor, refresh,
+          refresh-and-review CTR, and expand-and-refresh categories. The queue
+          is intended for human review, with clear reason codes and a
+          conservative focus on the highest-priority items.
+        </p>
+      </section>
+
+      <section class="section">
+        <h2>Week 8 showcase outline</h2>
+        <p>
+          Question: Can FlyRank use anonymized page metrics to rank content
+          refresh opportunities for editorial review?
+        </p>
+        <p>
+          Method: compare a rule-based baseline refresh score to a client-aware
+          random forest model on the same held-out client split.
+        </p>
+        <p>
+          Chart: show the model comparison table, including precision@50 and ROC
+          AUC above the baseline.
+        </p>
+        <p>
+          Honest result: the random forest improved top-K precision while still
+          keeping the output as a reviewer-facing recommendation queue.
+        </p>
+        <p>
+          Recommendation: use the ranked queue to prioritize high-impact refresh
+          candidates, then validate each item with editorial context.
+        </p>
+      </section>
+
+      <section class="section">
+        <h2>Reproducibility</h2>
+        <p>
+          All work is reproducible from this repository. Key notebooks are under
+          <code>work/notebooks/</code>, the feature and model scripts are under
+          <code>scripts/</code>, and the full run path is available in
+          <code>scripts/run_all.py</code>. Charts and result files are stored in
+          <code>outputs/</code>.
+        </p>
+        <ul>
+          <li><code>work/notebooks/capstone.ipynb</code></li>
+          <li><code>work/notebooks/w03_feature_leakage_check.ipynb</code></li>
+          <li><code>work/notebooks/w04_baseline_score.ipynb</code></li>
+          <li><code>work/notebooks/w05_model.ipynb</code></li>
+          <li><code>work/notebooks/w06_validation_audit.ipynb</code></li>
+          <li><code>work/notebooks/w07_action_playbook.ipynb</code></li>
+          <li><code>scripts/run_all.py</code></li>
+        </ul>
+      </section>
+
+      <section class="section">
+        <h2>Acknowledgments & data credit</h2>
+        <p>
+          Built on the FlyRank ML Internship dataset. Data credit:
+          <a href="https://flyrank.ai/" target="_blank" rel="noopener"
+            >https://flyrank.ai/</a
+          >.
+        </p>
+      </section>
+    </article>
+  </body>
+</html>
